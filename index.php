@@ -13,38 +13,60 @@ if (!$conn) {
     die("Database connection failed: " . mysqli_connect_error());
 }
 
+function passwordMatches($providedPassword, $storedPassword) {
+    if (password_verify($providedPassword, $storedPassword)) {
+        return true;
+    }
+
+    return $storedPassword === $providedPassword;
+}
+
 // when login button is clicked
 if (isset($_POST['login'])) {
-    // get email
-    $email = $_POST['email'];
-    $email = trim($email);
+    // get email and password
+    $email = trim($_POST['email'] ?? '');
+    $password = trim($_POST['password'] ?? '');
 
-    // check email is not empty
-    if ($email != "") {
+    // check email and password are not empty
+    if ($email != "" && $password != "") {
         // make email safe for query
         $email2 = mysqli_real_escape_string($conn, $email);
+        $password2 = mysqli_real_escape_string($conn, $password);
 
-        // check if email is in lecturer table
-        $sql = "SELECT * FROM lecturers WHERE email = '$email2'";
-        $result = mysqli_query($conn, $sql);
+        // check lecturer table first
+        $lecturerSql = "SELECT * FROM lecturers WHERE email = '$email2' LIMIT 1";
+        $lecturerResult = mysqli_query($conn, $lecturerSql);
 
-        // default role
-        $role = "student";
+        if ($lecturerResult && mysqli_num_rows($lecturerResult) > 0) {
+            $lecturer = mysqli_fetch_assoc($lecturerResult);
 
-        // if found, change role
-        if ($result && mysqli_num_rows($result) > 0) {
-            $role = "lecturer";
+            if (passwordMatches($password2, $lecturer['password'])) {
+                $_SESSION['email'] = $email;
+                $_SESSION['role'] = "lecturer";
+                header("Location: dashboard.php");
+                exit();
+            }
+
+            $error = "Invalid email or password.";
+        } else {
+            $studentSql = "SELECT * FROM students WHERE email = '$email2' LIMIT 1";
+            $studentResult = mysqli_query($conn, $studentSql);
+
+            if ($studentResult && mysqli_num_rows($studentResult) > 0) {
+                $student = mysqli_fetch_assoc($studentResult);
+
+                if (passwordMatches($password2, $student['password'])) {
+                    $_SESSION['email'] = $email;
+                    $_SESSION['role'] = "student";
+                    header("Location: dashboard.php");
+                    exit();
+                }
+            }
+
+            $error = "Invalid email or password.";
         }
-
-        // save session
-        $_SESSION['email'] = $email;
-        $_SESSION['role'] = $role;
-
-        // go to dashboard
-        header("Location: dashboard.php");
-        exit();
     } else {
-        $error = "Please enter your email address.";
+        $error = "Please enter both your email and password.";
     }
 }
 ?>
@@ -76,6 +98,9 @@ if (isset($_POST['login'])) {
         <form method="POST" action="">
             <label>Email Address</label>
             <input type="email" name="email" required>
+
+            <label>Password</label>
+            <input type="password" name="password" required>
 
             <button type="submit" name="login">Continue to dashboard <span>→</span></button>
         </form>
