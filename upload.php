@@ -1,8 +1,6 @@
 <?php
-// start session
 session_start();
 
-// connect database
 $dbHost = "localhost";
 $dbUser = "root";
 $dbPassword = "";
@@ -13,48 +11,38 @@ if (!$conn) {
     die("Database connection failed: " . mysqli_connect_error());
 }
 
-// check login
-if (!isset($_SESSION['email']) || !isset($_SESSION['role'])) {
+if (!isset($_SESSION['username']) || !isset($_SESSION['role'])) {
     header("Location: index.php");
     exit();
 }
 
-// check role
 if ($_SESSION['role'] != "lecturer") {
     header("Location: index.php");
     exit();
 }
 
-// upload assignment
 if (isset($_POST['upload'])) {
-    // get form data
     $title = $_POST['title'];
     $deadline = $_POST['deadline'];
     $file = $_FILES['assignment_file'];
 
-    // check form
     if ($title != "" && $deadline != "" && $file['name'] != "") {
-        // folder name
         $folder = "uploads/";
 
-        // make folder
         if (!is_dir($folder)) {
             mkdir($folder);
         }
 
-        // file path
         $name = time() . "_" . $file['name'];
         $path = $folder . $name;
 
-        // upload file
         if (move_uploaded_file($file['tmp_name'], $path)) {
             $title = mysqli_real_escape_string($conn, $title);
             $path = mysqli_real_escape_string($conn, $path);
             $deadline = mysqli_real_escape_string($conn, $deadline);
-            $lecturerEmail = mysqli_real_escape_string($conn, $_SESSION['email']);
+            $lecturerUsername = mysqli_real_escape_string($conn, $_SESSION['username']);
 
-            // save assignment
-            $q = "INSERT INTO assignments (title, file_path, lecturer_email, deadline) VALUES ('$title', '$path', '$lecturerEmail', '$deadline')";
+            $q = "INSERT INTO assignments (title, file_path, lecturer_username, deadline) VALUES ('$title', '$path', '$lecturerUsername', '$deadline')";
 
             if (mysqli_query($conn, $q)) {
                 header("Location: dashboard.php");
@@ -83,7 +71,6 @@ if (isset($_POST['upload'])) {
         <h1>Create an assignment</h1>
         <p class="muted">Students will see the brief and can submit their completed work.</p>
 
-        <!-- show error -->
         <?php if (isset($error)) { ?>
             <p class="error"><?php echo $error; ?></p>
         <?php } ?>

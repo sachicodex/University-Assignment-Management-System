@@ -1,13 +1,16 @@
--- Run this in phpMyAdmin before using the app.
+CREATE DATABASE IF NOT EXISTS assignment_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE assignment_db;
+
 CREATE TABLE IF NOT EXISTS lecturers (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(150) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    subject VARCHAR(150) NULL
 );
 
 CREATE TABLE IF NOT EXISTS students (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(150) NOT NULL UNIQUE,
+    username VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL
 );
 
@@ -15,23 +18,15 @@ CREATE TABLE IF NOT EXISTS assignments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     file_path VARCHAR(255) NOT NULL,
-    lecturer_email VARCHAR(150) NULL,
+    lecturer_username VARCHAR(100) NULL,
     deadline DATE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS submissions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     assignment_id INT NOT NULL,
-    student_email VARCHAR(150) NOT NULL,
+    student_username VARCHAR(100) NOT NULL,
     file_path VARCHAR(255) NOT NULL,
     submitted_at DATETIME NOT NULL,
-    UNIQUE KEY one_submission_per_student (assignment_id, student_email)
+    UNIQUE KEY one_submission_per_student (assignment_id, student_username)
 );
-
--- Example manual inserts:
--- INSERT INTO lecturers (email, password) VALUES ('lecturer@school.com', '123456');
--- INSERT INTO students (email, password) VALUES ('student@school.com', '123456');
--- For hashed passwords, use: INSERT INTO lecturers (email, password) VALUES ('lecturer@school.com', '$2y$10$...');
-
--- For older databases that already have the assignments table but are missing lecturer_email:
--- ALTER TABLE assignments ADD COLUMN lecturer_email VARCHAR(150) NULL AFTER file_path;

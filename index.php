@@ -1,8 +1,6 @@
 <?php
-// start session
 session_start();
 
-// connect database
 $dbHost = "localhost";
 $dbUser = "root";
 $dbPassword = "";
@@ -21,52 +19,47 @@ function passwordMatches($providedPassword, $storedPassword) {
     return $storedPassword === $providedPassword;
 }
 
-// when login button is clicked
 if (isset($_POST['login'])) {
-    // get email and password
-    $email = trim($_POST['email'] ?? '');
+    $username = trim($_POST['username'] ?? '');
     $password = trim($_POST['password'] ?? '');
 
-    // check email and password are not empty
-    if ($email != "" && $password != "") {
-        // make email safe for query
-        $email2 = mysqli_real_escape_string($conn, $email);
+    if ($username != "" && $password != "") {
+        $username2 = mysqli_real_escape_string($conn, $username);
         $password2 = mysqli_real_escape_string($conn, $password);
 
-        // check lecturer table first
-        $lecturerSql = "SELECT * FROM lecturers WHERE email = '$email2' LIMIT 1";
+        $lecturerSql = "SELECT * FROM lecturers WHERE username = '$username2' LIMIT 1";
         $lecturerResult = mysqli_query($conn, $lecturerSql);
 
         if ($lecturerResult && mysqli_num_rows($lecturerResult) > 0) {
             $lecturer = mysqli_fetch_assoc($lecturerResult);
 
             if (passwordMatches($password2, $lecturer['password'])) {
-                $_SESSION['email'] = $email;
+                $_SESSION['username'] = $username;
                 $_SESSION['role'] = "lecturer";
                 header("Location: dashboard.php");
                 exit();
             }
 
-            $error = "Invalid email or password.";
+            $error = "Invalid username or password.";
         } else {
-            $studentSql = "SELECT * FROM students WHERE email = '$email2' LIMIT 1";
+            $studentSql = "SELECT * FROM students WHERE username = '$username2' LIMIT 1";
             $studentResult = mysqli_query($conn, $studentSql);
 
             if ($studentResult && mysqli_num_rows($studentResult) > 0) {
                 $student = mysqli_fetch_assoc($studentResult);
 
                 if (passwordMatches($password2, $student['password'])) {
-                    $_SESSION['email'] = $email;
+                    $_SESSION['username'] = $username;
                     $_SESSION['role'] = "student";
                     header("Location: dashboard.php");
                     exit();
                 }
             }
 
-            $error = "Invalid email or password.";
+            $error = "Invalid username or password.";
         }
     } else {
-        $error = "Please enter both your email and password.";
+        $error = "Please enter both your username and password.";
     }
 }
 ?>
@@ -89,21 +82,26 @@ if (isset($_POST['login'])) {
         <section class="form-box login-card">
         <p class="eyebrow">WELCOME BACK</p>
         <h2>Sign in to your portal</h2>
-        <p class="muted">Use your university email address to continue.</p>
+        <p class="muted">Use your username to continue.</p>
+
+        <?php if (isset($_GET['registered'])) { ?>
+            <p class="success">Account created successfully. Please sign in.</p>
+        <?php } ?>
 
         <?php if (isset($error)) { ?>
             <p class="error"><?php echo $error; ?></p>
         <?php } ?>
 
         <form method="POST" action="">
-            <label>Email Address</label>
-            <input type="email" name="email" required>
+            <label>Username</label>
+            <input type="text" name="username" required>
 
             <label>Password</label>
             <input type="password" name="password" required>
 
             <button type="submit" name="login">Continue to dashboard <span>→</span></button>
         </form>
+        <p class="muted signup-prompt">Don't have an account? <a class="text-link" href="signup.php">Sign up</a></p>
         </section>
     </main>
 </body>

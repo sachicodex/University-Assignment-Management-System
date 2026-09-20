@@ -1,8 +1,6 @@
 <?php
-// start session
 session_start();
 
-// connect database
 $dbHost = "localhost";
 $dbUser = "root";
 $dbPassword = "";
@@ -13,34 +11,29 @@ if (!$conn) {
     die("Database connection failed: " . mysqli_connect_error());
 }
 
-// check login
-if (!isset($_SESSION['email']) || !isset($_SESSION['role'])) {
+if (!isset($_SESSION['username']) || !isset($_SESSION['role'])) {
     header("Location: index.php");
     exit();
 }
 
-// get role
 $role = $_SESSION['role'];
 
-// get assignment id
 $id = 0;
 if (isset($_GET['id'])) {
     $id = (int)$_GET['id'];
 }
 
-// get assignment data
-$email = mysqli_real_escape_string($conn, $_SESSION['email']);
+$username = mysqli_real_escape_string($conn, $_SESSION['username']);
 if ($role == "lecturer") {
-    $q = "SELECT * FROM assignments WHERE id = $id AND lecturer_email = '$email'";
+    $q = "SELECT * FROM assignments WHERE id = $id AND lecturer_username = '$username'";
 } else {
     $q = "SELECT * FROM assignments WHERE id = $id";
 }
 $r = mysqli_query($conn, $q);
 $row = mysqli_fetch_assoc($r);
 
-// Students see only their own submission. Lecturers see every student's work.
 if ($row && $role == "student") {
-    $submissionQuery = "SELECT * FROM submissions WHERE assignment_id = $id AND student_email = '$email'";
+    $submissionQuery = "SELECT * FROM submissions WHERE assignment_id = $id AND student_username = '$username'";
 } elseif ($row && $role == "lecturer") {
     $submissionQuery = "SELECT * FROM submissions WHERE assignment_id = $id ORDER BY submitted_at DESC";
 }
@@ -48,7 +41,6 @@ if (isset($submissionQuery)) {
     $submissions = mysqli_query($conn, $submissionQuery);
 }
 
-// Check if student has already submitted
 $hasStudentSubmitted = false;
 if ($role == "student" && isset($submissions) && mysqli_num_rows($submissions) > 0) {
     $hasStudentSubmitted = true;
@@ -76,7 +68,7 @@ if ($role == "student" && isset($submissions) && mysqli_num_rows($submissions) >
             </section>
 
             <section class="content-card"><div class="section-heading"><div><h2><?php echo $role == 'lecturer' ? 'Student submissions' : 'Your submission'; ?></h2><p class="muted"><?php echo $role == 'lecturer' ? 'Files submitted by students for this assignment.' : 'Your submitted file for this assignment.'; ?></p></div></div>
-            <?php if (isset($submissions) && mysqli_num_rows($submissions) > 0) { ?><div class="table-wrap"><table><tr><th><?php echo $role == 'lecturer' ? 'Student' : 'Status'; ?></th><th>Submitted on</th><th>File</th></tr><?php while ($submission = mysqli_fetch_assoc($submissions)) { ?><tr><td><?php echo $role == 'lecturer' ? htmlspecialchars($submission['student_email']) : '<span class="status complete">Submitted</span>'; ?></td><td><?php echo date('d M Y, H:i', strtotime($submission['submitted_at'])); ?></td><td><a class="text-link" href="<?php echo htmlspecialchars($submission['file_path']); ?>" target="_blank">Download file</a></td></tr><?php } ?></table></div><?php } else { ?><div class="empty-state">No work has been submitted yet.<?php if ($role == 'student' && !$hasStudentSubmitted) { ?><br><br><a class="button-link" href="submit.php?id=<?php echo $row['id']; ?>">Submit your work</a><?php } ?></div><?php } ?>
+            <?php if (isset($submissions) && mysqli_num_rows($submissions) > 0) { ?><div class="table-wrap"><table><tr><th><?php echo $role == 'lecturer' ? 'Student' : 'Status'; ?></th><th>Submitted on</th><th>File</th></tr><?php while ($submission = mysqli_fetch_assoc($submissions)) { ?><tr><td><?php echo $role == 'lecturer' ? htmlspecialchars($submission['student_username']) : '<span class="status complete">Submitted</span>'; ?></td><td><?php echo date('d M Y, H:i', strtotime($submission['submitted_at'])); ?></td><td><a class="text-link" href="<?php echo htmlspecialchars($submission['file_path']); ?>" target="_blank">Download file</a></td></tr><?php } ?></table></div><?php } else { ?><div class="empty-state">No work has been submitted yet.<?php if ($role == 'student' && !$hasStudentSubmitted) { ?><br><br><a class="button-link" href="submit.php?id=<?php echo $row['id']; ?>">Submit your work</a><?php } ?></div><?php } ?>
             </section>
         <?php } else { ?>
             <p class="error">Assignment not found.</p>

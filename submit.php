@@ -11,19 +11,17 @@ if (!$conn) {
     die("Database connection failed: " . mysqli_connect_error());
 }
 
-if (!isset($_SESSION['email']) || $_SESSION['role'] != "student") { header("Location: index.php"); exit(); }
+if (!isset($_SESSION['username']) || $_SESSION['role'] != "student") { header("Location: index.php"); exit(); }
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $assignmentResult = mysqli_query($conn, "SELECT * FROM assignments WHERE id = $id");
 $assignment = mysqli_fetch_assoc($assignmentResult);
 
-// Check if student already submitted
-$email = mysqli_real_escape_string($conn, $_SESSION['email']);
-$existingSubmission = mysqli_query($conn, "SELECT * FROM submissions WHERE assignment_id = $id AND student_email = '$email'");
+$username = mysqli_real_escape_string($conn, $_SESSION['username']);
+$existingSubmission = mysqli_query($conn, "SELECT * FROM submissions WHERE assignment_id = $id AND student_username = '$username'");
 $hasSubmitted = $existingSubmission && mysqli_num_rows($existingSubmission) > 0;
 
 if (isset($_POST['submit_work']) && $assignment) {
-    // Check if student has already submitted
     if ($hasSubmitted) {
         $error = "You have already submitted this assignment. Only one submission per assignment is allowed.";
     } else {
@@ -36,7 +34,7 @@ if (isset($_POST['submit_work']) && $assignment) {
             if (move_uploaded_file($file['tmp_name'], $path)) {
                 $path = mysqli_real_escape_string($conn, $path);
                 $now = date("Y-m-d H:i:s");
-                $q = "INSERT INTO submissions (assignment_id, student_email, file_path, submitted_at) VALUES ($id, '$email', '$path', '$now')";
+                $q = "INSERT INTO submissions (assignment_id, student_username, file_path, submitted_at) VALUES ($id, '$username', '$path', '$now')";
                 if (mysqli_query($conn, $q)) { header("Location: view.php?id=$id"); exit(); }
                 $error = "Database error: " . mysqli_error($conn);
             } else { $error = "File upload failed. Please try again."; }
